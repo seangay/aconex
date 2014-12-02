@@ -38,20 +38,22 @@ public class WordIndexTest {
     }
 
     @Test
-    public void testLoadIndexAddsAnotherItemToTheCount() {
+    public void testLoadIndexIgnoresPunctuationAndWhitespaceAndAddsItemsToTheIndex() {
         final WordIndex wordIndex = new WordIndex();
-        wordIndex.loadIndex("goat");
 
-        Assert.assertTrue("Adding the text \"goat\" should add something to the indexed count.", wordIndex.getIndexedCount() == 1);
+        final String testEntry = "go .eat,ha";
+        wordIndex.loadIndex(testEntry);
+
+        Assert.assertEquals(String.format("Adding the text \"%s\" should add something to the indexed count.", testEntry), 1, wordIndex.getIndexedCount());
     }
 
     @Test
-    public void testLoadIndexIgnoresPunctuationAndWhitespace() {
+    public void testLoadIndexWithAValueThatWillOverflowAnIntWillNotAddTheValue() {
         final WordIndex wordIndex = new WordIndex();
 
-        wordIndex.loadIndex("goats .eat,hay");
-
-        Assert.assertTrue("Adding the text \"goats are number.one\" should add something to the indexed count.", wordIndex.getIndexedCount() == 1);
+        final String testEntry = "This is a really long word that is going to be ignored by the indexer as the conversion will be a large number that won't be useful for mapping anyway";
+        wordIndex.loadIndex(testEntry);
+        Assert.assertEquals(String.format("Shouldn't have been able to add \"%s\" to the index as it was too long.", testEntry), 0, wordIndex.getIndexedCount());
     }
 
     @Test

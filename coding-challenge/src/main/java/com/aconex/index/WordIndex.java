@@ -62,31 +62,40 @@ public class WordIndex {
      * @param newEntry the new entry to add.
      */
     public void loadIndex(@NotNull final String newEntry) {
-        final StringBuilder numberBuilder = new StringBuilder();
+        final StringBuilder builder = new StringBuilder();
 
-        final String upperCaseEntry = newEntry.replaceAll("\\W", "").toUpperCase();
-        for (char newEntryChar : upperCaseEntry.toCharArray()) {
+        //strip any whitespace and punctuation then uppercase the string to ensure that indexed values match the required output.
+        final String processedEntry = newEntry.replaceAll("\\W", "").toUpperCase();
+        for (char currentChar : processedEntry.toCharArray()) {
             //determine what the corresponding value should be for the current char
-            int numberValue = getNumberEncoding(newEntryChar);
+            int encodedChar = getNumberEncoding(currentChar);
 
-            if (numberValue < 0) {
-                //need to return here due to the word containing invalid items that can't be mapped to a number.
+            if (encodedChar < 0) {
+                //return here due to the word containing invalid items that can't be mapped to a number.
                 if (LOGGER.isLoggable(Level.FINE)) {
-                    LOGGER.log(Level.FINE, "Not adding value {0} to file as it contained {1} which can't be mapped to a number.", new Object[]{ newEntry, newEntryChar });
+                    LOGGER.log(Level.FINE, "Not adding value {0} to file as it contained {1} which can't be mapped to a number.", new Object[]{ newEntry, currentChar });
                 }
                 return;
             } else {
-                numberBuilder.append(numberValue);
+                builder.append(encodedChar);
             }
         }
 
-        int entryNumberValue = Integer.parseInt(numberBuilder.toString());
-        Set<String> currentValuesForNumber = wordMap.get(entryNumberValue);
-        if (currentValuesForNumber == null) {
-            currentValuesForNumber = new HashSet<>();
-            wordMap.put(entryNumberValue, currentValuesForNumber);
+        final String newEntryConvertedToNumbers = builder.toString();
+        try {
+            int entryNumberValue = Integer.parseInt(newEntryConvertedToNumbers);
+            Set<String> currentWordsForEntry = wordMap.get(entryNumberValue);
+            if (currentWordsForEntry == null) {
+                currentWordsForEntry = new HashSet<>();
+                wordMap.put(entryNumberValue, currentWordsForEntry);
+            }
+            currentWordsForEntry.add(processedEntry);
+        } catch (NumberFormatException e) {
+            //the dictionary may have very large words in it that don't fit into a standard int. Just drop them if this happens. Chances are they aren't going to be useful for mapping anyway.
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.log(Level.FINE, "Not adding value {0} to file as it was too long for a standard number.", new Object[]{ newEntryConvertedToNumbers });
+            }
         }
-        currentValuesForNumber.add(upperCaseEntry);
     }
 
     /**

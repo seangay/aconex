@@ -1,26 +1,21 @@
 package com.aconex.index;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.sun.istack.internal.NotNull;
-import com.sun.istack.internal.Nullable;
-
+import com.aconex.util.TextUtils;
 
 /**
  * Controls mapping of numbers to Strings that could be derived using a standard phone handset.
  */
 public class WordIndex {
-    private final static Logger LOGGER = Logger.getLogger(WordIndex.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(WordIndex.class.getName());
     private Map<Integer, Set<String>> wordMap = new HashMap<>();
 
     /**
@@ -35,23 +30,19 @@ public class WordIndex {
     }
 
     /**
-     * Loads the entries in the file located through the provided path into the index.
-     * <p/>
-     * Any entries that contain characters which can't be written using a standard phone keypad will not be added to the
-     * index.
+     * Reads the entire content of the stream processing each line as it finds it.
      *
-     * @param path the path to a file that is to be processed. Each line of the file should contain a new word to add
-     * @throws IOException              if the file can't be read
-     * @throws IllegalArgumentException if the file can't be located
+     * @param inputStream the inputStream containing the content to be loaded.
      */
-    public void loadIndex(@NotNull final Path path) throws IOException {
-        final boolean dictionaryExists = Files.exists(path);
-        if (!dictionaryExists) {
-            throw new IllegalArgumentException(String.format("File missing: %s cannot be found.", path));
+    public void loadIndex(final InputStream inputStream) {
+        if (inputStream == null) {
+            throw new IllegalArgumentException("Stream cannot be null");
         }
-        final List<String> entryLines = Files.readAllLines(path, Charset.defaultCharset());
-        for (String entryLine : entryLines) {
-            loadIndex(entryLine);
+
+        try (Scanner scanner = new Scanner(inputStream)) {
+            while (scanner.hasNext()) {
+                loadIndex(scanner.nextLine());
+            }
         }
     }
 
@@ -61,11 +52,11 @@ public class WordIndex {
      *
      * @param newEntry the new entry to add.
      */
-    public void loadIndex(@NotNull final String newEntry) {
+    public void loadIndex(final String newEntry) {
         final StringBuilder builder = new StringBuilder();
 
         //strip any whitespace and punctuation then uppercase the string to ensure that indexed values match the required output.
-        final String processedEntry = newEntry.replaceAll("\\W", "").toUpperCase();
+        final String processedEntry = TextUtils.stripRedundantCharacters(newEntry).toUpperCase();
         for (char currentChar : processedEntry.toCharArray()) {
             //determine what the corresponding value should be for the current char
             int encodedChar = getNumberEncoding(currentChar);
@@ -102,7 +93,6 @@ public class WordIndex {
      * Searches the index for any values that match the number provided. If there are no matching entries null will be
      * returned.
      */
-    @Nullable
     public Set<String> search(int number) {
         return wordMap.get(number);
     }

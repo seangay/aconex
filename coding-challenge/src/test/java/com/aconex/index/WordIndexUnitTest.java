@@ -1,33 +1,23 @@
 package com.aconex.index;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-public class WordIndexTest {
+public class WordIndexUnitTest {
     @Test
-    public void testLoadingTheIndexFailsWhenTheFileIsMissing() throws IOException {
+    public void testLoadingTheIndexFailsWhenStreamIsNull() throws IOException {
         final WordIndex wordIndex = new WordIndex();
 
         try {
-            wordIndex.loadIndex(Paths.get("thisFileIsMissing"));
+            wordIndex.loadIndex((InputStream) null);
             Assert.fail("We should have thrown an IOException if the file is missing.");
         } catch (IllegalArgumentException e) {
-            Assert.assertTrue(e.getMessage().contains("File missing"));
-        }
-    }
-
-    @Test
-    public void testLoadingTheIndexFailsWhenTheFileIsNotText() {
-        final WordIndex wordIndex = new WordIndex();
-        try {
-            wordIndex.loadIndex(Paths.get(WordIndexTest.class.getResource("invalidFile.jpg").getPath()));
-            Assert.fail("An IOException should have been thrown as the file isn't readable as text.");
-        } catch (IOException e) {
-            //this is an expected error so we don't need to do anything here
+            Assert.assertTrue(e.getMessage().equals("Stream cannot be null"));
         }
     }
 
@@ -59,9 +49,9 @@ public class WordIndexTest {
     @Test
     public void testLoadIndexUsingPathAddsMultipleItemsToTheCount() throws IOException {
         final WordIndex wordIndex = new WordIndex();
-        wordIndex.loadIndex(Paths.get(WordIndexTest.class.getResource("sampleDict").getPath()));
+        wordIndex.loadIndex(WordIndexUnitTest.class.getResourceAsStream("sampleDict"));
 
-        Assert.assertEquals("There should be 3 entries in the index from the test file", 3, wordIndex.getIndexedCount());
+        Assert.assertEquals("There should be 10 entries in the index from the test file", 10, wordIndex.getIndexedCount());
     }
 
     @Test

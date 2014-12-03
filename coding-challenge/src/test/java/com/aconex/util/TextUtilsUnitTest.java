@@ -29,4 +29,9 @@ public class TextUtilsUnitTest {
     public void testNullIsReturnedForNullStringWhenStrippingRedundantCharacters() {
         Assert.assertEquals("Unexpected result for removing punctuation and whitespace.", null, TextUtils.stripRedundantCharacters(null));
     }
+
+    @Test
+    public void testJoinAs1800NumberJoinsWithDashesAndAddsPrefix() {
+        Assert.assertEquals("Unexpected value from joining as 1800 number", "1-800-GOAT-COW", TextUtils.joinAs1800Number("GOAT", "COW"));
+    }
 }

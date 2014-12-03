@@ -20,6 +20,12 @@ public final class TextUtils {
         return null;
     }
 
+    /**
+     * Joins together the elements provided as the 1-800-elements value. The prefix of "1-800" is always added to the
+     * response.
+     * <p/>
+     * All other elements are joined by a "-".
+     */
     public static String joinAs1800Number(String... elements) {
         final StringBuilder builder = new StringBuilder("1-800");
 

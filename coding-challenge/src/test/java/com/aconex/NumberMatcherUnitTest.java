@@ -79,12 +79,45 @@ public class NumberMatcherUnitTest {
     }
 
     @Test
-    public void testGetMatchesFindsMultiWordMatchesWithRemainingDigit() {
+    public void testGetMatchesFindsMultiWordMatchesWithUntouchedDigitInTheMiddle() {
         final NumberMatcher numberMatcher = new NumberMatcher(createSmallWordIndex(), "1800-462882");
 
         final Set<String> matches = numberMatcher.findMatches();
         Assert.assertNotNull("Matches shouldn't be null", matches);
         Assert.assertEquals("There should be 1 match for the number provided", 1, matches.size());
         Assert.assertTrue("Invalid matching number", matches.contains("1-800-GOAT-8-A"));
+    }
+
+    @Test
+    public void testGetMatchesFindsMultiWordMatchesWithUntouchedDigitAtTheEnd() {
+        final NumberMatcher numberMatcher = new NumberMatcher(createSmallWordIndex(), "1800-467730");
+
+        final Set<String> matches = numberMatcher.findMatches();
+        Assert.assertNotNull("Matches shouldn't be null", matches);
+        Assert.assertEquals("There should be 1 match for the number provided", 1, matches.size());
+        Assert.assertTrue("Invalid matching number", matches.contains("1-800-HORSE-0"));
+    }
+
+    @Test
+    public void testGetMatchesFindsMultiWordMatchesWithUntouchedDigitAtTheBeginning() {
+        final NumberMatcher numberMatcher = new NumberMatcher(createSmallWordIndex(), "1800-6437245");
+
+        final Set<String> matches = numberMatcher.findMatches();
+        Assert.assertNotNull("Matches shouldn't be null", matches);
+        Assert.assertEquals("There should be 1 match for the number provided", 1, matches.size());
+        Assert.assertTrue("Invalid matching number", matches.contains("1-800-6-GERBIL"));
+    }
+
+    @Test
+    public void testGetMatchesFindsMultiWordMatchesWithMultipleMatches() {
+        final NumberMatcher numberMatcher = new NumberMatcher(createSmallWordIndex(), "1800-228228");
+
+        final Set<String> matches = numberMatcher.findMatches();
+        Assert.assertNotNull("Matches shouldn't be null", matches);
+        Assert.assertEquals("There should be 4 matches for the number provided", 4, matches.size());
+        Assert.assertTrue("Invalid matching number", matches.contains("1-800-CAT-CAT"));
+        Assert.assertTrue("Invalid matching number", matches.contains("1-800-CAT-BAT"));
+        Assert.assertTrue("Invalid matching number", matches.contains("1-800-BAT-CAT"));
+        Assert.assertTrue("Invalid matching number", matches.contains("1-800-BAT-BAT"));
     }
 }

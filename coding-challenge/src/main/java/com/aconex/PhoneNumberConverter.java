@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Scanner;
+import java.util.Set;
 
 import com.aconex.index.WordIndex;
 
@@ -75,7 +76,18 @@ public class PhoneNumberConverter {
     }
 
     void processNumber(final String number) {
-        System.out.print(String.format("Processing phone number %s.", number));
+        System.out.println(String.format("Processing phone number %s.", number));
+        final NumberMatcher numberMatcher = new NumberMatcher(wordIndex, number);
+        final Set<String> matches = numberMatcher.findMatches();
+
+        if (!matches.isEmpty()) {
+            System.out.println(String.format("Found %d options: ", matches.size()));
+            for (String match : matches) {
+                System.out.println(match);
+            }
+        } else {
+            System.out.println("No options found.");
+        }
     }
 
     void setWordIndex(final WordIndex wordIndex) {

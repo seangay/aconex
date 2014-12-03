@@ -122,7 +122,7 @@ public class NumberMatcher {
                         matches.addAll(generateOutput(firstPartWords, secondPartWords));
                     }
 
-                    //the final thing to cover off is the digit being left out of the string match.
+                    //the final thing to cover off is the digit being "untouched" either in the middle or at the end of the number
                     char currentDigit = matchingValueAsString.charAt(i);
                     if (i != matchingValueAsString.length() - 1) {
                         //only check this if the last part actually matches something
@@ -137,6 +137,14 @@ public class NumberMatcher {
                         matches.addAll(generateOutput(firstPartWords, currentDigit));
                     }
                 }
+            }
+
+            //finally cover off the case where the first number is the "untouched one". It isn't done in the loop as it is a specific case.
+            char firstDigit = matchingValueAsString.charAt(0);
+            final String secondPart = matchingValueAsString.substring(1);
+            final Set<String> secondPartWords = wordIndex.search(Integer.parseInt(secondPart));
+            if (secondPartWords != null && !secondPartWords.isEmpty()) {
+                matches.addAll(generateOutput(firstDigit, secondPartWords));
             }
         }
         return matches;
@@ -170,13 +178,20 @@ public class NumberMatcher {
         return output;
     }
 
+    private Set<String> generateOutput(char interimDigit, final Set<String> firstPartWords) {
+        final HashSet<String> output = new HashSet<>();
+        for (String firstPartWord : firstPartWords) {
+            output.add(TextUtils.joinAs1800Number(String.valueOf(interimDigit), firstPartWord));
+        }
+        return output;
+    }
+
     private Set<String> generateOutput(final Set<String> matches) {
         final HashSet<String> output = new HashSet<>();
 
         for (String match : matches) {
             output.add(TextUtils.joinAs1800Number(match));
         }
-
         return output;
     }
 }

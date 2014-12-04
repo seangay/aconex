@@ -7,13 +7,17 @@ aconex
 
 The coding-challenge directory contains the source code for my submission.
 
-Navigate to the directory and run:
+Check out the code using:
 
-mvn clean install
+`git clone https://github.com/seangay/aconex.git directory-to-clone-into`
+
+Navigate to the `coding-challenge` directory under the cloned repository from above and run:
+
+`mvn clean install`
 
 This will run all tests and build the tool into:
 
-coding-challenge/target/coding-challenge-1.0-SNAPSHOT.jar
+`directory-to-clone-into/coding-challenge/target/coding-challenge-1.0-SNAPSHOT.jar`
 
 
 ## Running

@@ -27,7 +27,7 @@ public class CodingChallengeLauncher {
             }
             boolean keepRunning = true;
             while (keepRunning) {
-                String number = console.readLine(String.format("Enter a number find matching words, or '%s' to quit: ", EXIT_COMMAND));
+                String number = console.readLine(String.format("Enter a number to find matching words, or '%s' to quit: ", EXIT_COMMAND));
                 if (EXIT_COMMAND.equals(number)) {
                     keepRunning = false;
                 } else {

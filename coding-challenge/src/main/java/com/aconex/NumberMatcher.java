@@ -20,25 +20,33 @@ public class NumberMatcher {
      * @param numberAsString the string representation of the value to get matching words for the number. Must not be empty.
      */
     public NumberMatcher(final WordIndex wordIndex, final String numberAsString) {
+        checkArgumentValidity(wordIndex, numberAsString);
         this.wordIndex = wordIndex;
+        this.matchingValue = determineMatchingValue(numberAsString);
+    }
+
+    private Integer determineMatchingValue(final String numberAsString) {
+        String strippedValue = TextUtils.stripRedundantCharacters(numberAsString);
+
+        Integer matchingValue = null;
+        if (strippedValue != null) {
+            strippedValue = strippedValue.replaceFirst("1800", "");
+            try {
+                matchingValue = Integer.valueOf(strippedValue);
+            } catch (NumberFormatException e) {
+                matchingValue = null;
+            }
+        }
+        return matchingValue;
+    }
+
+    private void checkArgumentValidity(final WordIndex wordIndex, final String numberAsString) {
         if (wordIndex == null) {
             throw new IllegalArgumentException("Word Index cannot be null");
         }
 
-        if (numberAsString == null || numberAsString.isEmpty()) {
+        if (TextUtils.isEmpty(numberAsString)) {
             throw new IllegalArgumentException("NumberAsString cannot be empty");
-        }
-
-        String strippedNumberAsString = TextUtils.stripRedundantCharacters(numberAsString);
-
-        if (strippedNumberAsString != null) {
-            strippedNumberAsString = strippedNumberAsString.replaceFirst("1800", "");
-
-            try {
-                matchingValue = Integer.valueOf(strippedNumberAsString);
-            } catch (NumberFormatException e) {
-                matchingValue = null;
-            }
         }
     }
 
@@ -62,39 +70,24 @@ public class NumberMatcher {
      * numbers in the value to match.
      */
     public Set<String> findMatches() {
-        final HashSet<String> matches = new HashSet<>();
-
-        //get any full work matches from the index
-        final Set<String> fullWordMatches = findFullWordMatches();
-        if (!fullWordMatches.isEmpty()) {
-            matches.addAll(fullWordMatches);
-        }
+        final Set<String> matches = new HashSet<>();
+        matches.addAll(findFullWordMatches());
 
         if (matches.isEmpty()) {
-            final Set<String> multiWordMatches = findMultiWordMatches();
-            if (!multiWordMatches.isEmpty()) {
-                matches.addAll(multiWordMatches);
-            }
+            matches.addAll(findMultiWordMatches());
         }
         return matches;
     }
 
     private Set<String> findFullWordMatches() {
         if (getMatchingValue() != null) {
-            Set<String> fullWordMatches = wordIndex.search(getMatchingValue());
-
-            if (fullWordMatches != null) {
-                return generateOutput(fullWordMatches);
-            }
+            return generateOutput(wordIndex.search(getMatchingValue()));
         }
         return new HashSet<>();
     }
 
     /**
-     * This is a hairy method but I couldn't see a better way of dealing with the multitude of options. The number needs
-     * to be split in various ways and matches need to be found for each.
-     * <p/>
-     * Options for matching are:
+     * Finds matching options for:
      * <ul>
      * <li>word-word</li>
      * <li>digit-word</li>
@@ -105,92 +98,103 @@ public class NumberMatcher {
      * @return the set of words complete for output including the 1-800 prefix.
      */
     private Set<String> findMultiWordMatches() {
-        final HashSet<String> matches = new HashSet<>();
-        if (getMatchingValue() != null) {
-            String matchingValueAsString = String.valueOf(getMatchingValue());
+        final Set<String> matches = new HashSet<>();
+        if (getMatchingValue() == null) {
+            return matches;
+        }
 
-            for (int i = 1; i < matchingValueAsString.length(); i++) {
-                final String firstPart = matchingValueAsString.substring(0, i);
+        final String matchingValueAsString = String.valueOf(getMatchingValue());
 
-                final Set<String> firstPartWords = wordIndex.search(Integer.parseInt(firstPart));
-                if (firstPartWords != null && !firstPartWords.isEmpty()) {
-                    //see if the second part contains words that may work.
-                    final String secondPart = matchingValueAsString.substring(i);
-                    final Set<String> secondPartWords = wordIndex.search(Integer.parseInt(secondPart));
-                    if (secondPartWords != null && !secondPartWords.isEmpty()) {
-                        //now we have matches for the first and second part matching so generate the output for them.
-                        matches.addAll(generateOutput(firstPartWords, secondPartWords));
-                    }
-
-                    //the final thing to cover off is the digit being "untouched" either in the middle or at the end of the number
-                    char currentDigit = matchingValueAsString.charAt(i);
-                    if (i != matchingValueAsString.length() - 1) {
-                        //only check this if the last part actually matches something
-                        final String thirdPart = matchingValueAsString.substring(i + 1);
-                        final Set<String> thirdPartWords = wordIndex.search(Integer.parseInt(thirdPart));
-                        if (thirdPartWords != null && !thirdPartWords.isEmpty()) {
-                            //now we have matches for the first and second part matching so generate the output for them.
-                            matches.addAll(generateOutput(firstPartWords, currentDigit, thirdPartWords));
-                        }
-                    } else {
-                        //this covers off the last digit being the one that remains
-                        matches.addAll(generateOutput(firstPartWords, currentDigit));
-                    }
-                }
+        for (int i = 1; i < matchingValueAsString.length(); i++) {
+            final String firstPart = matchingValueAsString.substring(0, i);
+            final Set<String> firstPartWords = findMatches(firstPart);
+            if (!hasValues(firstPartWords)) {
+                continue;
             }
+            //generate any output for word-word option
+            matches.addAll(generateOutput(firstPartWords, findMatches(matchingValueAsString.substring(i))));
 
-            //finally cover off the case where the first number is the "untouched one". It isn't done in the loop as it is a specific case.
-            char firstDigit = matchingValueAsString.charAt(0);
-            final String secondPart = matchingValueAsString.substring(1);
-            final Set<String> secondPartWords = wordIndex.search(Integer.parseInt(secondPart));
-            if (secondPartWords != null && !secondPartWords.isEmpty()) {
-                matches.addAll(generateOutput(firstDigit, secondPartWords));
+            //get the current character to see whether there are matches when excluding it from a search for the remainder.
+            final char currentDigit = matchingValueAsString.charAt(i);
+            if (isLastCharacter(matchingValueAsString, i)) {
+                //generate any output for word-digit option
+                matches.addAll(generateOutput(firstPartWords, currentDigit));
+            } else {
+                //generate any output for word-digit-word option
+                matches.addAll(generateOutput(firstPartWords, currentDigit, findMatches(matchingValueAsString.substring(i + 1))));
             }
         }
+        //generate any output for digit-word option
+        matches.addAll(generateOutput(matchingValueAsString.charAt(0), findMatches(matchingValueAsString.substring(1))));
         return matches;
     }
 
-    private Set<String> generateOutput(final Set<String> firstPartWords, final Set<String> secondPartWords) {
-        final HashSet<String> output = new HashSet<>();
-        for (String firstPartWord : firstPartWords) {
-            for (String secondPartWord : secondPartWords) {
-                output.add(TextUtils.joinAs1800Number(firstPartWord, secondPartWord));
+    private Set<String> findMatches(final String searchValue) {
+        return wordIndex.search(Integer.parseInt(searchValue));
+    }
+
+    private boolean isLastCharacter(final String matchingValueAsString, final int i) {
+        return i == matchingValueAsString.length() - 1;
+    }
+
+    private boolean hasValues(final Set<String> words) {
+        return words != null && !words.isEmpty();
+    }
+
+    private boolean hasValues(final Set<String> words, final Set<String> moreWords) {
+        return hasValues(words) && hasValues(moreWords);
+    }
+
+    private Set<String> generateOutput(final Set<String> firstWords, final Set<String> secondWords) {
+        final Set<String> output = new HashSet<>();
+        if (hasValues(firstWords, secondWords)) {
+            for (final String firstWord : firstWords) {
+                for (final String secondPartWord : secondWords) {
+                    output.add(TextUtils.joinAs1800Number(firstWord, secondPartWord));
+                }
             }
         }
         return output;
     }
 
-    private Set<String> generateOutput(final Set<String> firstPartWords, char interimDigit, final Set<String> secondPartWords) {
-        final HashSet<String> output = new HashSet<>();
-        for (String firstPartWord : firstPartWords) {
-            for (String secondPartWord : secondPartWords) {
-                output.add(TextUtils.joinAs1800Number(firstPartWord, String.valueOf(interimDigit), secondPartWord));
+    private Set<String> generateOutput(final Set<String> firstWords, final char firstChar, final Set<String> secondWords) {
+        final Set<String> output = new HashSet<>();
+        if (hasValues(firstWords, secondWords)) {
+            for (final String firstWord : firstWords) {
+                for (final String secondWord : secondWords) {
+                    output.add(TextUtils.joinAs1800Number(firstWord, String.valueOf(firstChar), secondWord));
+                }
             }
         }
         return output;
     }
 
-    private Set<String> generateOutput(final Set<String> firstPartWords, char interimDigit) {
-        final HashSet<String> output = new HashSet<>();
-        for (String firstPartWord : firstPartWords) {
-            output.add(TextUtils.joinAs1800Number(firstPartWord, String.valueOf(interimDigit)));
+    private Set<String> generateOutput(final Set<String> words, final char number) {
+        final Set<String> output = new HashSet<>();
+        if (hasValues(words)) {
+            for (final String firstWord : words) {
+                output.add(TextUtils.joinAs1800Number(firstWord, String.valueOf(number)));
+            }
         }
         return output;
     }
 
-    private Set<String> generateOutput(char interimDigit, final Set<String> firstPartWords) {
-        final HashSet<String> output = new HashSet<>();
-        for (String firstPartWord : firstPartWords) {
-            output.add(TextUtils.joinAs1800Number(String.valueOf(interimDigit), firstPartWord));
+    private Set<String> generateOutput(final char number, final Set<String> words) {
+        final Set<String> output = new HashSet<>();
+        if (hasValues(words)) {
+            for (final String word : words) {
+                output.add(TextUtils.joinAs1800Number(String.valueOf(number), word));
+            }
         }
         return output;
     }
 
-    private Set<String> generateOutput(final Set<String> matches) {
-        final HashSet<String> output = new HashSet<>();
-
-        for (String match : matches) {
-            output.add(TextUtils.joinAs1800Number(match));
+    private Set<String> generateOutput(final Set<String> words) {
+        final Set<String> output = new HashSet<>();
+        if (hasValues(words)) {
+            for (final String word : words) {
+                output.add(TextUtils.joinAs1800Number(word));
+            }
         }
         return output;
     }

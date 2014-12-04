@@ -32,7 +32,13 @@ public final class TextUtils {
         for (String element : elements) {
             builder.append("-").append(element);
         }
-
         return builder.toString();
+    }
+
+    /**
+     * Convenience to not have to worry about checking null checks for String value verification.
+     */
+    public static boolean isEmpty(final String value) {
+        return (value == null || value.isEmpty() || value.trim().isEmpty());
     }
 }

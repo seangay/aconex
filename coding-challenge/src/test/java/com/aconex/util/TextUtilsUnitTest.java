@@ -34,4 +34,19 @@ public class TextUtilsUnitTest {
     public void testJoinAs1800NumberJoinsWithDashesAndAddsPrefix() {
         Assert.assertEquals("Unexpected value from joining as 1800 number", "1-800-GOAT-COW", TextUtils.joinAs1800Number("GOAT", "COW"));
     }
+
+    @Test
+    public void testIsEmptyReturnsTrueForEmptyStringValue() {
+        Assert.assertTrue("Should have returned true for a String without content.", TextUtils.isEmpty(""));
+    }
+
+    @Test
+    public void testIsEmptyReturnsTrueForAllSpacesStringValue() {
+        Assert.assertTrue("Should have returned true for a String containing only spaces.", TextUtils.isEmpty("   "));
+    }
+
+    @Test
+    public void testIsEmptyReturnsTrueForNullStringValue() {
+        Assert.assertTrue("Should have returned true for a null value.", TextUtils.isEmpty(null));
+    }
 }

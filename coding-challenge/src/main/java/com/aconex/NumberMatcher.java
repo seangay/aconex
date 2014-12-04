@@ -20,7 +20,7 @@ public class NumberMatcher {
      * @param numberAsString the string representation of the value to get matching words for the number. Must not be empty.
      */
     public NumberMatcher(final WordIndex wordIndex, final String numberAsString) {
-        checkArgumentValidity(wordIndex, numberAsString);
+        checkArguments(wordIndex, numberAsString);
         this.wordIndex = wordIndex;
         this.matchingValue = determineMatchingValue(numberAsString);
     }
@@ -40,7 +40,7 @@ public class NumberMatcher {
         return matchingValue;
     }
 
-    private void checkArgumentValidity(final WordIndex wordIndex, final String numberAsString) {
+    private void checkArguments(final WordIndex wordIndex, final String numberAsString) {
         if (wordIndex == null) {
             throw new IllegalArgumentException("Word Index cannot be null");
         }

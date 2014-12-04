@@ -11,7 +11,6 @@ import java.net.URISyntaxException;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.contrib.java.lang.system.RestoreSystemProperties;
 import org.junit.contrib.java.lang.system.StandardOutputStreamLog;
 import org.mockito.Mockito;
@@ -23,27 +22,13 @@ import com.aconex.index.WordIndex;
  */
 public class PhoneNumberConverterUnitTest {
     @Rule
-    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
-    @Rule
     public final StandardOutputStreamLog log = new StandardOutputStreamLog();
     @Rule
     public final RestoreSystemProperties restoreSystemProperties = new RestoreSystemProperties(PhoneNumberConverter.SYS_PROP_DICTIONARY_OVERRIDE);
 
     @Test
-    public void testSystemExitsWhenNoArgsAreProvidedAsThereIsNoConsoleForTesting() {
-        exit.expectSystemExitWithStatus(1);
-        PhoneNumberConverter.main(null);
-    }
-
-    @Test
-    public void testSystemExitValueWhenArgsAreProvided() {
-        exit.expectSystemExitWithStatus(0);
-        PhoneNumberConverter.main(new String[]{ "argumentZero" });
-    }
-
-    @Test
-    public void testArgsThatWillNotResolveToAFile() {
-        final PhoneNumberConverter phoneNumberConverter = new PhoneNumberConverter();
+    public void testProcessFileWithAnInvalidFileLocation() {
+        final PhoneNumberConverter phoneNumberConverter = new PhoneNumberConverter(mock(WordIndex.class));
         final String testFilePath = "invalidFileLocation";
         phoneNumberConverter.processFile(testFilePath);
 
@@ -59,8 +44,8 @@ public class PhoneNumberConverterUnitTest {
     }
 
     @Test
-    public void testArgsThatFindFilesWillPrintNumbersBeingProcessed() {
-        final PhoneNumberConverter phoneNumberConverter = new PhoneNumberConverter();
+    public void testProcessFileWithAValidFileContainingNumbers() {
+        final PhoneNumberConverter phoneNumberConverter = new PhoneNumberConverter(mock(WordIndex.class));
         phoneNumberConverter.processFile(PhoneNumberConverterUnitTest.class.getResource("testNumberFile").getPath());
 
         //get the output and make sure that there is the text in there for the line in the file we expect.
@@ -75,9 +60,7 @@ public class PhoneNumberConverterUnitTest {
         final WordIndex mockWordIndex = mock(WordIndex.class);
 
         //inject the mock and call the method being tested
-        final PhoneNumberConverter phoneNumberConverter = new PhoneNumberConverter();
-        phoneNumberConverter.setWordIndex(mockWordIndex);
-        phoneNumberConverter.initialise();
+        new PhoneNumberConverter(mockWordIndex);
 
         Mockito.verify(mockWordIndex).loadIndex(isA(FileInputStream.class));
     }
@@ -90,19 +73,16 @@ public class PhoneNumberConverterUnitTest {
         final WordIndex mockWordIndex = mock(WordIndex.class);
 
         //inject the mock and call the method being tested
-        final PhoneNumberConverter phoneNumberConverter = new PhoneNumberConverter();
-        phoneNumberConverter.setWordIndex(mockWordIndex);
-        phoneNumberConverter.initialise();
-
+        new PhoneNumberConverter(mockWordIndex);
         Mockito.verify(mockWordIndex).loadIndex(isA(BufferedInputStream.class));
     }
 
     @Test
-    public void testOutputIsWrittenWhenWeHaveMatchesForANumber() {
-        final PhoneNumberConverter phoneNumberConverter = new PhoneNumberConverter();
+    public void testProcessNumberWritesOutValuesForANumberThatFindsMatches() {
+        //load a smaller dictionary into the index through overriding the system property
         final String testSystemProperty = PhoneNumberConverterUnitTest.class.getResource("/com/aconex/index/sampleDict").getPath();
         System.setProperty(PhoneNumberConverter.SYS_PROP_DICTIONARY_OVERRIDE, testSystemProperty);
-        phoneNumberConverter.initialise();
+        final PhoneNumberConverter phoneNumberConverter = new PhoneNumberConverter();
         phoneNumberConverter.processNumber("228");
 
         //get the output and make sure that there is the text in there for the line in the file we expect.
